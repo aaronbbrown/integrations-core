@@ -28,9 +28,9 @@ from requests.packages.urllib3.packages.ssl_match_hostname import \
     match_hostname
 
 # project
-from checks.network_checks import NetworkCheck, Status
+from datadog_checks.checks.network_checks import NetworkCheck, Status
 from config import _is_affirmative
-from util import headers as agent_headers
+from datadog_checks.utils.headers import headers as agent_headers
 
 DEFAULT_EXPECTED_CODE = "(1|2|3)\d\d"
 CONTENT_LENGTH = 200
