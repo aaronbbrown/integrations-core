@@ -35,17 +35,17 @@ def couchbase_service(request):
     ]
     subprocess.check_call(args + ['up', '-d'], env=env)
 
+    # always stop and remove the container even if there's an exception at setup
+    def teardown():
+        subprocess.check_call(args + ["down"], env=env)
+    request.addfinalizer(teardown)
+
     # wait for couchbase to be up
     if not wait_for_couchbase_container():
         raise Exception("couchbase container boot timed out!")
 
     # set up couchbase through its cli
     setup_couchbase()
-
-    # always stop and remove the container even if there's an exception at setup
-    def teardown():
-        subprocess.check_call(args + ["down"], env=env)
-    request.addfinalizer(teardown)
 
     yield
 
