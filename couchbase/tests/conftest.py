@@ -41,11 +41,18 @@ def couchbase_service(request):
     request.addfinalizer(teardown)
 
     # wait for couchbase to be up
-    if not wait_for_couchbase_container():
+    if not wait_for_couchbase_container(CB_CONTAINER_NAME):
         raise Exception("couchbase container boot timed out!")
 
     # set up couchbase through its cli
     setup_couchbase()
+
+    # we need to wait for couchbase to generate stats
+    if not wait_for_node_stats():
+        raise Exception("couchbase node stats timed out!")
+
+    if not wait_for_bucket_stats(BUCKET_NAME):
+        raise Exception("couchbase bucket stats timed out!")
 
     yield
 
@@ -112,6 +119,7 @@ def setup_couchbase():
         '--cluster-ramsize', '256', '--cluster-index-ramsize', '256', '--cluster-fts-ramsize', '256'
     ]
     subprocess.check_call(init_args)
+
     if not wait_for_couchbase_init():
         raise Exception("couchbase initialization timed out!")
 
@@ -123,22 +131,15 @@ def setup_couchbase():
     ]
     subprocess.check_call(create_bucket_args)
 
-    # we need to wait for couchbase to generate stats
-    if not wait_for_bucket_stats(BUCKET_NAME):
-        raise Exception("couchbase bucket stats timed out!")
 
-    if not wait_for_node_stats():
-        raise Exception("couchbase node stats timed out!")
-
-
-def wait_for_couchbase_container():
+def wait_for_couchbase_container(container_name):
     """
     Wait for couchbase to start
     """
 
     for i in xrange(15):
         status_args = [
-            'docker', 'exec', CB_CONTAINER_NAME,
+            'docker', 'exec', container_name,
             'couchbase-cli', 'server-info', '-c', 'localhost:{}'.format(PORT),
             '-u', USER, '-p', PASSWORD
         ]
